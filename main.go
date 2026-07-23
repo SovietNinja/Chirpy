@@ -19,15 +19,15 @@ func main() {
 	handler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(handler))
 
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(200)
 		w.Write([]byte("OK"))
 	})
 
-	mux.Handle("/metrics", apiCfg.middlewareMetricsPrint())
+	mux.Handle("GET /metrics", apiCfg.middlewareMetricsPrint())
 
-	mux.Handle("/reset", apiCfg.middlewareMetricsReset())
+	mux.Handle("POST /reset", apiCfg.middlewareMetricsReset())
 
 	err := srv.ListenAndServe()
 	if err != nil {
