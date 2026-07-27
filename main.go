@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"sync/atomic"
 )
 
@@ -19,15 +19,15 @@ func main() {
 	handler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(handler))
 
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(200)
 		w.Write([]byte("OK"))
 	})
 
-	mux.Handle("GET /metrics", apiCfg.middlewareMetricsPrint())
+	mux.Handle("GET /admin/metrics", apiCfg.middlewareMetricsPrint())
 
-	mux.Handle("POST /reset", apiCfg.middlewareMetricsReset())
+	mux.Handle("POST /admin/reset", apiCfg.middlewareMetricsReset())
 
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -47,10 +47,15 @@ func (c *apiConfig) resetHits() {
 	c.fileserverHits.Store(0)
 }
 
-func (c *apiConfig) printHits() string {
+// func (c *apiConfig) printHits() string {
+// 	counter := c.fileserverHits.Load()
+// 	Text := "Hits: " + strconv.Itoa(int(counter))
+// 	return Text
+// }
+
+func (c *apiConfig) hitsCount() int {
 	counter := c.fileserverHits.Load()
-	Text := "Hits: " + strconv.Itoa(int(counter))
-	return Text
+	return int(counter)
 }
 
 func (c *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -62,9 +67,17 @@ func (c *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 
 func (c *apiConfig) middlewareMetricsPrint() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(200)
-		w.Write([]byte(c.printHits()))
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		metric_template := `
+			<html>
+				<body>
+					<h1>Welcome, Chirpy Admin</h1>
+					<p>Chirpy has been visited %d times!</p>
+				</body>
+			</html>`
+		metric_template = fmt.Sprintf(metric_template, c.hitsCount())
+		w.Write([]byte(metric_template))
 	})
 }
 
