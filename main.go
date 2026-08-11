@@ -1,18 +1,28 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/SovietNinja/Chirpy/internal/database"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
+	godotenv.Load()
+	apiCfg := apiConfig{}
+	dbURL := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbURL)
+	dbQueries := database.New(db)
+	apiCfg.dbQueries = dbQueries
 	mux := http.NewServeMux()
 	srv := http.Server{
 		Addr:    ":8080",
 		Handler: mux,
 	}
-
-	apiCfg := apiConfig{}
 
 	handler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(handler))
@@ -29,7 +39,7 @@ func main() {
 
 	mux.Handle("POST /admin/reset", apiCfg.middlewareMetricsReset())
 
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

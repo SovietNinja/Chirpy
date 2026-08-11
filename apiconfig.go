@@ -1,9 +1,14 @@
 package main
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+
+	"github.com/SovietNinja/Chirpy/internal/database"
+)
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	dbQueries      *database.Queries
 }
 
 func (c *apiConfig) increment() {

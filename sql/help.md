@@ -1,0 +1,2 @@
+goose postgres "postgres://postgres:postgres@localhost:5432/chirpy" up
+goose postgres "postgres://postgres:postgres@localhost:5432/chirpy" down
