@@ -22,3 +22,14 @@ Content-Type: application/json
 {
   "body": "This has fornax and sharbert in it. And a lot of text that keeps going and going well past one hundred and forty characters to trigger the length validation error branch instead."
 }
+
+###
+POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{
+  "email": "test@test.com"
+}
+
+###
+POST http://localhost:8080/admin/reset

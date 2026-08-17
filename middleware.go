@@ -27,12 +27,3 @@ func (c *apiConfig) middlewareMetricsPrint() http.Handler {
 		w.Write([]byte(metric_template))
 	})
 }
-
-func (c *apiConfig) middlewareMetricsReset() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c.resetHits()
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(200)
-		w.Write([]byte("Reset hits metric"))
-	})
-}

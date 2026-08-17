@@ -5,19 +5,34 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/SovietNinja/Chirpy/internal/database"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+}
+
 func main() {
 	godotenv.Load()
-	apiCfg := apiConfig{}
+	apiCfg := &apiConfig{}
+	apiCfg.platform = os.Getenv("PLATFORM")
 	dbURL := os.Getenv("DB_URL")
 	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
 	dbQueries := database.New(db)
 	apiCfg.dbQueries = dbQueries
+
 	mux := http.NewServeMux()
 	srv := http.Server{
 		Addr:    ":8080",
@@ -34,10 +49,11 @@ func main() {
 	})
 
 	mux.HandleFunc("POST /api/validate_chirp", handleChirp)
+	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUser)
 
 	mux.Handle("GET /admin/metrics", apiCfg.middlewareMetricsPrint())
 
-	mux.Handle("POST /admin/reset", apiCfg.middlewareMetricsReset())
+	mux.Handle("POST /admin/reset", apiCfg.handlerReset())
 
 	err = srv.ListenAndServe()
 	if err != nil {
