@@ -33,3 +33,15 @@ Content-Type: application/json
 
 ###
 POST http://localhost:8080/admin/reset
+
+
+
+###
+
+POST http://localhost:8080/api/chirps
+Content-Type: application/json
+
+{
+  "body": "Hello, world!",
+  "user_id": "d7559b46-8bde-4c9d-8981-dfd4deefae09"
+}
