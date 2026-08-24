@@ -76,3 +76,23 @@ func isProhibited(text string) bool {
 	}
 	return false
 }
+
+func (c *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
+	chirps, err := c.dbQueries.GetChirps(r.Context())
+	if err != nil {
+		respondWithError(w, 500, err.Error())
+		return
+	}
+	export := make([]Chirp, len(chirps))
+	for idx, chirp := range chirps {
+		export_chirp := Chirp{
+			Id:         chirp.ID,
+			Created_at: chirp.CreatedAt,
+			Updated_at: chirp.UpdatedAt,
+			Body:       chirp.Body,
+			User_id:    chirp.UserID,
+		}
+		export[idx] = export_chirp
+	}
+	respondWithJSON(w, 200, export)
+}

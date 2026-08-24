@@ -50,9 +50,9 @@ func main() {
 
 	mux.HandleFunc("POST /api/chirps", apiCfg.handleChirp)
 	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUser)
+	mux.HandleFunc("GET /api/chirps", apiCfg.handlerGetChirps)
 
 	mux.Handle("GET /admin/metrics", apiCfg.middlewareMetricsPrint())
-
 	mux.Handle("POST /admin/reset", apiCfg.handlerReset())
 
 	err = srv.ListenAndServe()
