@@ -96,3 +96,24 @@ func (c *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 	}
 	respondWithJSON(w, 200, export)
 }
+
+func (c *apiConfig) handlerGetChirpByID(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(w, 404, err.Error())
+		return
+	}
+	chirp, err := c.dbQueries.GetChirpByID(r.Context(), id)
+	if err != nil {
+		respondWithError(w, 404, err.Error())
+		return
+	}
+	export := Chirp{
+		Id:         chirp.ID,
+		Created_at: chirp.CreatedAt,
+		Updated_at: chirp.UpdatedAt,
+		Body:       chirp.Body,
+		User_id:    chirp.UserID,
+	}
+	respondWithJSON(w, 200, export)
+}
