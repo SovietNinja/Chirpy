@@ -45,3 +45,20 @@ Content-Type: application/json
   "body": "Hello, world!",
   "user_id": "d7559b46-8bde-4c9d-8981-dfd4deefae09"
 }
+
+###
+POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{
+  "email": "saul@bettercall.com",
+  "password": "123456"
+}
+###
+POST http://localhost:8080/api/login
+Content-Type: application/json
+
+{
+  "email": "saul@bettercall.com",
+  "password": "123456"
+}

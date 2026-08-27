@@ -2,26 +2,18 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/SovietNinja/Chirpy/internal/database"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
-type User struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-}
-
 func main() {
+	fmt.Println("Starting Chirpy server...")
 	godotenv.Load()
 	apiCfg := &apiConfig{}
 	apiCfg.platform = os.Getenv("PLATFORM")
@@ -48,15 +40,19 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
-	mux.HandleFunc("POST /api/chirps", apiCfg.handleChirp)
 	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUser)
+	mux.HandleFunc("POST /api/login", apiCfg.handleLogin)
+
+	mux.HandleFunc("POST /api/chirps", apiCfg.handleChirp)
 	mux.HandleFunc("GET /api/chirps", apiCfg.handlerGetChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.handlerGetChirpByID)
 
 	mux.Handle("GET /admin/metrics", apiCfg.middlewareMetricsPrint())
 	mux.Handle("POST /admin/reset", apiCfg.handlerReset())
 
+	fmt.Printf("Server started on port %s\n", srv.Addr)
 	err = srv.ListenAndServe()
+
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

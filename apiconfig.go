@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 	"sync/atomic"
 
@@ -31,31 +30,6 @@ func (c *apiConfig) resetHits() {
 func (c *apiConfig) hitsCount() int {
 	counter := c.fileserverHits.Load()
 	return int(counter)
-}
-
-func (c *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
-	type createUserRequest struct {
-		Email string `json:"email"`
-	}
-	decoder := json.NewDecoder(r.Body)
-	var req createUserRequest
-	err := decoder.Decode(&req)
-	if err != nil {
-		respondWithError(w, 500, err.Error())
-		return
-	}
-	dbuser, err := c.dbQueries.CreateUser(r.Context(), req.Email)
-	if err != nil {
-		respondWithError(w, 500, err.Error())
-		return
-	}
-	user := User{
-		ID:        dbuser.ID,
-		CreatedAt: dbuser.CreatedAt,
-		UpdatedAt: dbuser.UpdatedAt,
-		Email:     dbuser.Email,
-	}
-	respondWithJSON(w, 201, user)
 }
 
 func (c *apiConfig) handlerReset() http.Handler {
