@@ -17,6 +17,7 @@ func main() {
 	godotenv.Load()
 	apiCfg := &apiConfig{}
 	apiCfg.platform = os.Getenv("PLATFORM")
+	apiCfg.secret = os.Getenv("SECRET")
 	dbURL := os.Getenv("DB_URL")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {

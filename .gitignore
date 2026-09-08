@@ -10,3 +10,11 @@
 
 # Output of go build
 /Chirpy
+
+#Ai
+/.claude
+CLAUDE.md
+
+
+# env
+.env

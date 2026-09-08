@@ -15,6 +15,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
+	Token     string    `json:"token"`
 }
 
 func (c *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -53,9 +54,11 @@ func (c *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 
 func (c *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 	type LoginRequest struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email      string `json:"email"`
+		Password   string `json:"password"`
+		ExpiriesIn int    `json:"expires_in_seconds"`
 	}
+	expiriesIn := 3600 //default 1 hour
 	decoder := json.NewDecoder(r.Body)
 	var req LoginRequest
 	err := decoder.Decode(&req)
@@ -73,11 +76,20 @@ func (c *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, 401, "Incorrect email or password")
 		return
 	}
+	if req.ExpiriesIn < expiriesIn && req.ExpiriesIn > 0 {
+		expiriesIn = req.ExpiriesIn
+	}
+	token, err := auth.MakeJWT(dbuser.ID, c.secret, time.Duration(expiriesIn)*time.Second)
+	if err != nil {
+		respondWithError(w, 500, err.Error())
+		return
+	}
 	user := User{
 		ID:        dbuser.ID,
 		CreatedAt: dbuser.CreatedAt,
 		UpdatedAt: dbuser.UpdatedAt,
 		Email:     dbuser.Email,
+		Token:     token,
 	}
 	respondWithJSON(w, 200, user)
 }

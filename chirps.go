@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SovietNinja/Chirpy/internal/auth"
 	"github.com/SovietNinja/Chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -19,22 +20,34 @@ type Chirp struct {
 }
 
 func (c *apiConfig) handleChirp(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, err.Error())
+		return
+	}
+	user_id, err := auth.ValidateJWT(token, c.secret)
+	if err != nil {
+		respondWithError(w, 401, err.Error())
+		return
+	}
 	decoder := json.NewDecoder(r.Body)
-	chirp := Chirp{}
-	err := decoder.Decode(&chirp)
+	type chirpRequest struct {
+		Body string `json:"body"`
+	}
+	chirpReq := chirpRequest{}
+	err = decoder.Decode(&chirpReq)
 	if err != nil {
 		respondWithError(w, 500, err.Error())
 		return
 	}
-
-	if len(chirp.Body) > 140 {
+	if len(chirpReq.Body) > 140 {
 		respondWithError(w, 400, "Chirp is too long")
 		return
 	}
 
 	newChirpParams := database.CreateChirpParams{
-		Body:   profanityCensor(chirp.Body),
-		UserID: chirp.User_id,
+		Body:   profanityCensor(chirpReq.Body),
+		UserID: user_id,
 	}
 
 	newChirp, err := c.dbQueries.CreateChirp(r.Context(), newChirpParams)
@@ -43,7 +56,7 @@ func (c *apiConfig) handleChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chirp = Chirp{
+	chirp := Chirp{
 		Id:         newChirp.ID,
 		Created_at: newChirp.CreatedAt,
 		Updated_at: newChirp.UpdatedAt,
