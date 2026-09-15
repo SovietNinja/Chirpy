@@ -10,7 +10,7 @@ import (
 )
 
 const revokeToken = `-- name: RevokeToken :exec
-UPDATE refresh_tokens SET revoked_at = NOW(), updated_at= NOW() WHERE token = $1 RETURNING token, created_at, updated_at, user_id, expires_at, revoked_at
+UPDATE refresh_tokens SET revoked_at = NOW(), updated_at= NOW() WHERE token = $1
 `
 
 func (q *Queries) RevokeToken(ctx context.Context, token string) error {

@@ -39,7 +39,7 @@ func (c *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, 500, err.Error())
 		return
 	}
-	dbuser, err := c.dbQueries.CreateUser(r.Context(), database.CreateUserParams{
+	dbUser, err := c.dbQueries.CreateUser(r.Context(), database.CreateUserParams{
 		Email:          req.Email,
 		HashedPassword: hashedPassword,
 	})
@@ -48,12 +48,52 @@ func (c *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := User{
-		ID:        dbuser.ID,
-		CreatedAt: dbuser.CreatedAt,
-		UpdatedAt: dbuser.UpdatedAt,
-		Email:     dbuser.Email,
+		ID:        dbUser.ID,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Email:     dbUser.Email,
 	}
 	respondWithJSON(w, 201, user)
+}
+
+func (c *apiConfig) handlerUpdateUser(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, err.Error())
+		return
+	}
+	user, err := auth.ValidateJWT(token, c.secret)
+	if err != nil {
+		respondWithError(w, 401, err.Error())
+		return
+	}
+	type ChangeRequest struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	decoder := json.NewDecoder(r.Body)
+	var req ChangeRequest
+	err = decoder.Decode(&req)
+	if err != nil {
+		respondWithError(w, 500, err.Error())
+		return
+	}
+	hashedPass, err := auth.HashPassword(req.Password)
+	if err != nil {
+		respondWithError(w, 500, err.Error())
+		return
+	}
+	dbUser, err := c.dbQueries.UpdateUserMailAndPassword(r.Context(), database.UpdateUserMailAndPasswordParams{ID: user, Email: req.Email, HashedPassword: hashedPass})
+	if err != nil {
+		respondWithError(w, 500, err.Error())
+		return
+	}
+	respondWithJSON(w, 200, User{
+		ID:        dbUser.ID,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Email:     dbUser.Email,
+	})
 }
 
 func (c *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +101,6 @@ func (c *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-
 	decoder := json.NewDecoder(r.Body)
 	var req LoginRequest
 	err := decoder.Decode(&req)
