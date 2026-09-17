@@ -20,6 +20,19 @@ type User struct {
 	Email        string    `json:"email"`
 	AccessToken  string    `json:"token"`
 	RefreshToken string    `json:"refresh_token"`
+	Red          bool      `json:"is_chirpy_red"`
+}
+
+func (c *apiConfig) validateUser(r *http.Request) (uuid.UUID, error) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	userID, err := auth.ValidateJWT(token, c.secret)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return userID, nil
 }
 
 func (c *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -52,17 +65,13 @@ func (c *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: dbUser.CreatedAt,
 		UpdatedAt: dbUser.UpdatedAt,
 		Email:     dbUser.Email,
+		Red:       dbUser.IsChirpyRed,
 	}
 	respondWithJSON(w, 201, user)
 }
 
 func (c *apiConfig) handlerUpdateUser(w http.ResponseWriter, r *http.Request) {
-	token, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		respondWithError(w, 401, err.Error())
-		return
-	}
-	user, err := auth.ValidateJWT(token, c.secret)
+	userID, err := c.validateUser(r)
 	if err != nil {
 		respondWithError(w, 401, err.Error())
 		return
@@ -83,7 +92,7 @@ func (c *apiConfig) handlerUpdateUser(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, 500, err.Error())
 		return
 	}
-	dbUser, err := c.dbQueries.UpdateUserMailAndPassword(r.Context(), database.UpdateUserMailAndPasswordParams{ID: user, Email: req.Email, HashedPassword: hashedPass})
+	dbUser, err := c.dbQueries.UpdateUserMailAndPassword(r.Context(), database.UpdateUserMailAndPasswordParams{ID: userID, Email: req.Email, HashedPassword: hashedPass})
 	if err != nil {
 		respondWithError(w, 500, err.Error())
 		return
@@ -93,6 +102,7 @@ func (c *apiConfig) handlerUpdateUser(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: dbUser.CreatedAt,
 		UpdatedAt: dbUser.UpdatedAt,
 		Email:     dbUser.Email,
+		Red:       dbUser.IsChirpyRed,
 	})
 }
 
@@ -108,18 +118,18 @@ func (c *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, 500, err.Error())
 		return
 	}
-	dbuser, err := c.dbQueries.GetUserByEmail(r.Context(), req.Email)
+	dbUser, err := c.dbQueries.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
 		respondWithError(w, 401, "Incorrect email or password")
 		return
 	}
-	match, err := auth.CheckPasswordHash(req.Password, dbuser.HashedPassword)
+	match, err := auth.CheckPasswordHash(req.Password, dbUser.HashedPassword)
 	if err != nil || !match {
 		respondWithError(w, 401, "Incorrect email or password")
 		return
 	}
 
-	access_token, err := auth.MakeJWT(dbuser.ID, c.secret, time.Duration(expiriesInAccess)*time.Second)
+	access_token, err := auth.MakeJWT(dbUser.ID, c.secret, time.Duration(expiriesInAccess)*time.Second)
 	if err != nil {
 		respondWithError(w, 500, err.Error())
 		return
@@ -127,7 +137,7 @@ func (c *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	refresh_token_params := database.CreateRefreshTokenParams{
 		Token:     auth.MakeRefreshToken(),
-		UserID:    dbuser.ID,
+		UserID:    dbUser.ID,
 		ExpiresAt: time.Now().UTC().Add(time.Duration(expiriesInRefresh) * time.Hour),
 	}
 
@@ -138,12 +148,13 @@ func (c *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := User{
-		ID:           dbuser.ID,
-		CreatedAt:    dbuser.CreatedAt,
-		UpdatedAt:    dbuser.UpdatedAt,
-		Email:        dbuser.Email,
+		ID:           dbUser.ID,
+		CreatedAt:    dbUser.CreatedAt,
+		UpdatedAt:    dbUser.UpdatedAt,
+		Email:        dbUser.Email,
 		AccessToken:  access_token,
 		RefreshToken: refresh_token.Token,
+		Red:          dbUser.IsChirpyRed,
 	}
 	respondWithJSON(w, 200, user)
 }

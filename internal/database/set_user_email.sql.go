@@ -12,7 +12,7 @@ import (
 )
 
 const updateUserMail = `-- name: UpdateUserMail :one
-UPDATE users SET email = $2, updated_at= NOW() WHERE id = $1 RETURNING id, created_at, updated_at, email, hashed_password
+UPDATE users SET email = $2, updated_at= NOW() WHERE id = $1 RETURNING id, created_at, updated_at, email, hashed_password, is_chirpy_red
 `
 
 type UpdateUserMailParams struct {
@@ -29,6 +29,7 @@ func (q *Queries) UpdateUserMail(ctx context.Context, arg UpdateUserMailParams) 
 		&i.UpdatedAt,
 		&i.Email,
 		&i.HashedPassword,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }

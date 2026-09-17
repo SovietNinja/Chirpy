@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SovietNinja/Chirpy/internal/auth"
 	"github.com/SovietNinja/Chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -20,12 +19,7 @@ type Chirp struct {
 }
 
 func (c *apiConfig) handleChirp(w http.ResponseWriter, r *http.Request) {
-	token, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		respondWithError(w, 401, err.Error())
-		return
-	}
-	user_id, err := auth.ValidateJWT(token, c.secret)
+	user_id, err := c.validateUser(r)
 	if err != nil {
 		respondWithError(w, 401, err.Error())
 		return
@@ -129,4 +123,32 @@ func (c *apiConfig) handlerGetChirpByID(w http.ResponseWriter, r *http.Request) 
 		User_id:    chirp.UserID,
 	}
 	respondWithJSON(w, 200, export)
+}
+
+func (c *apiConfig) handlerDeleteChirpByID(w http.ResponseWriter, r *http.Request) {
+	userId, err := c.validateUser(r)
+	if err != nil {
+		respondWithError(w, 401, err.Error())
+		return
+	}
+	chirpID, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(w, 404, err.Error())
+		return
+	}
+	chirp, err := c.dbQueries.GetChirpByID(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, 404, err.Error())
+		return
+	}
+	if chirp.UserID != userId {
+		respondWithError(w, 403, "unauthorized")
+		return
+	}
+	err = c.dbQueries.DeleteChirpById(r.Context(), chirp.ID)
+	if err != nil {
+		respondWithError(w, 404, err.Error())
+		return
+	}
+	w.WriteHeader(204)
 }

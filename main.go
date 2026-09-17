@@ -48,9 +48,12 @@ func main() {
 	mux.HandleFunc("POST /api/refresh", apiCfg.handleTokenRefresh)
 	mux.HandleFunc("POST /api/revoke", apiCfg.handleTokenRevoke)
 
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.handlePolka)
+
 	mux.HandleFunc("POST /api/chirps", apiCfg.handleChirp)
 	mux.HandleFunc("GET /api/chirps", apiCfg.handlerGetChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.handlerGetChirpByID)
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.handlerDeleteChirpByID)
 
 	mux.Handle("GET /admin/metrics", apiCfg.middlewareMetricsPrint())
 	mux.Handle("POST /admin/reset", apiCfg.handlerReset())
