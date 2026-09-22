@@ -11,7 +11,7 @@
 # Output of go build
 /Chirpy
 
-#Ai
+#LLM
 /.claude
 CLAUDE.md
 

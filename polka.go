@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/SovietNinja/Chirpy/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -19,9 +20,14 @@ type RequestData struct {
 }
 
 func (c *apiConfig) handlePolka(w http.ResponseWriter, r *http.Request) {
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil || apiKey != c.polkaKey {
+		w.WriteHeader(401)
+		return
+	}
 	decoder := json.NewDecoder(r.Body)
 	var req UserUpgradeRequest
-	err := decoder.Decode(&req)
+	err = decoder.Decode(&req)
 	if err != nil {
 		respondWithError(w, 500, err.Error())
 		return
@@ -37,7 +43,6 @@ func (c *apiConfig) handlePolka(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		respondWithError(w, 500, err.Error())
 		return
-
 	}
 	w.WriteHeader(204)
 }
