@@ -1,2 +1,2 @@
--- name: DeleteChirpByID :exec
-DELETE FROM chirps WHERE id = 251;
+-- name: GetChirpByID :one
+SELECT * FROM chirps WHERE id = $1;

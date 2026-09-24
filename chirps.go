@@ -85,7 +85,20 @@ func isProhibited(text string) bool {
 }
 
 func (c *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := c.dbQueries.GetChirps(r.Context())
+	var chirps []database.Chirp
+	var err error
+
+	s := r.URL.Query().Get("author_id")
+	if s != "" {
+		userId, parseErr := uuid.Parse(s)
+		if parseErr != nil {
+			respondWithError(w, 400, "invalid author_id")
+			return
+		}
+		chirps, err = c.dbQueries.GetChirpsByUserID(r.Context(), userId)
+	} else {
+		chirps, err = c.dbQueries.GetChirps(r.Context())
+	}
 	if err != nil {
 		respondWithError(w, 500, err.Error())
 		return
