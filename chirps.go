@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -87,10 +88,10 @@ func isProhibited(text string) bool {
 func (c *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 	var chirps []database.Chirp
 	var err error
-
-	s := r.URL.Query().Get("author_id")
-	if s != "" {
-		userId, parseErr := uuid.Parse(s)
+	asc := true
+	authorQuery := r.URL.Query().Get("author_id")
+	if authorQuery != "" {
+		userId, parseErr := uuid.Parse(authorQuery)
 		if parseErr != nil {
 			respondWithError(w, 400, "invalid author_id")
 			return
@@ -103,6 +104,10 @@ func (c *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, 500, err.Error())
 		return
 	}
+	sortQuery := r.URL.Query().Get("sort")
+	if sortQuery == "desc" {
+		asc = false
+	}
 	export := make([]Chirp, len(chirps))
 	for idx, chirp := range chirps {
 		export_chirp := Chirp{
@@ -113,6 +118,9 @@ func (c *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 			User_id:    chirp.UserID,
 		}
 		export[idx] = export_chirp
+	}
+	if !asc {
+		sort.Slice(export, func(i, j int) bool { return export[i].Created_at.After(export[j].Created_at) })
 	}
 	respondWithJSON(w, 200, export)
 }
